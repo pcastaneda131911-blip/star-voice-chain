@@ -6,7 +6,7 @@ StarAudioProcessor::StarAudioProcessor()
                                .withInput("Input", juce::AudioChannelSet::stereo(), true)
                                .withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
-    formatManager.addFormat(std::make_unique<juce::VST3PluginFormat>());
+    formatManager.addFormat(new juce::VST3PluginFormat());
     reverbParams.roomSize = 0.5f;
     reverbParams.damping = 0.7f;
     reverbParams.width = 1.0f;
@@ -29,13 +29,7 @@ bool StarAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) cons
 void StarAudioProcessor::prepareToPlay(double newRate, int samplesPerBlock)
 {
     sampleRate = newRate;
-    inputGain.prepare({ newRate, (juce::uint32) samplesPerBlock, 2 });
-    outputGain.prepare({ newRate, (juce::uint32) samplesPerBlock, 2 });
-    highPass.prepare({ newRate, (juce::uint32) samplesPerBlock, 2 });
-    highPass.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(newRate, 35.0f);
     reverb.setSampleRate((float) newRate);
-    delay.prepare({ newRate, (juce::uint32) samplesPerBlock, 2 });
-    delay.setDelay((float) (0.35 * newRate));
     for (auto& plugin : externalPlugins)
         plugin->prepareToPlay(newRate, samplesPerBlock);
 }
@@ -48,9 +42,6 @@ void StarAudioProcessor::releaseResources()
 
 void StarAudioProcessor::processInternalBlock(juce::AudioBuffer<float>& buffer)
 {
-    juce::dsp::ProcessContextReplacing<float> context(buffer);
-    highPass.process(context);
-
     juce::AudioBuffer<float> wetBuffer;
     wetBuffer.makeCopyOf(buffer);
     reverb.processStereo(wetBuffer.getWritePointer(0), wetBuffer.getWritePointer(1),
@@ -63,18 +54,7 @@ void StarAudioProcessor::processInternalBlock(juce::AudioBuffer<float>& buffer)
             buffer.setSample(ch, i, buffer.getSample(ch, i) * (1.0f - wet)
                                 + wetBuffer.getSample(ch, i) * wet);
 
-        if (delayMix.getNextValue() > 0.001f)
-        {
-            for (int ch = 0; ch < juce::jmin(2, buffer.getNumChannels()); ++ch)
-            {
-                float delayed = delay.popSample(ch);
-                float input = buffer.getSample(ch, i);
-                delay.pushSample(ch, input);
-                buffer.setSample(ch, i, input + delayed * delayMix.getNextValue());
-            }
-        }
     }
-    outputGain.process(context);
 }
 
 void StarAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
@@ -179,13 +159,20 @@ void StarAudioProcessor::loadExternalPlugins()
             {
                 juce::String error;
                 auto* format = formatManager.getFormat(0);
-                auto plugin = format != nullptr
-                    ? format->createPluginInstance(type, sampleRate, 512, error)
-                    : nullptr;
-                if (plugin != nullptr)
+                if (format != nullptr)
                 {
-                    plugin->prepareToPlay(sampleRate, 512);
-                    externalPlugins.emplace_back(std::move(plugin));
+                    format->createPluginInstance(
+                        type, sampleRate, 512,
+                        [this](std::unique_ptr<juce::AudioPluginInstance> plugin,
+                               const juce::String& /*error*/)
+                        {
+                            if (plugin != nullptr)
+                            {
+                                juce::ScopedLock pluginLock(stateLock);
+                                plugin->prepareToPlay(sampleRate, 512);
+                                externalPlugins.emplace_back(std::move(plugin));
+                            }
+                        });
                 }
                 break;
             }

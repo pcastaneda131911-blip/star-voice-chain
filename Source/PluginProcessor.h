@@ -65,14 +65,11 @@ private:
     juce::int64 listeningSampleCount = 0;
     StarAnalysis lastAnalysis;
 
-    juce::dsp::IIR::Filter<float> highPass, lowShelf, highShelf;
-    juce::dsp::Gain<float> inputGain, outputGain;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> compressorGain;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> reverbMix;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> delayMix;
     juce::Reverb reverb;
     juce::Reverb::Parameters reverbParams;
-    juce::DelayLine<float, juce::DelayLineInterpolationTypes::Lagrange> delay { 192000 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StarAudioProcessor)
 };
