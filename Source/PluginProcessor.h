@@ -59,10 +59,6 @@ private:
     juce::String scanStatus { "No escaneado" };
     juce::Time listeningStart;
     double sampleRate = 44100.0;
-    double listeningRmsSquared = 0.0;
-    double listeningCrossings = 0.0;
-    double listeningPrevious = 0.0;
-    juce::int64 listeningSampleCount = 0;
     StarAnalysis lastAnalysis;
 
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> compressorGain;

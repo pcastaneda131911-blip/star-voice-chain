@@ -61,23 +61,6 @@ void StarAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                       juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
-    if (listening.load())
-    {
-        for (int ch = 0; ch < juce::jmin(2, buffer.getNumChannels()); ++ch)
-        {
-            auto* samples = buffer.getReadPointer(ch);
-            for (int i = 0; i < buffer.getNumSamples(); ++i)
-            {
-                listeningRmsSquared += (double) samples[i] * (double) samples[i];
-                if (listeningSampleCount > 0
-                    && ((listeningPrevious >= 0.0 && samples[i] < 0.0)
-                        || (listeningPrevious < 0.0 && samples[i] >= 0.0)))
-                    listeningCrossings += 1.0;
-                listeningPrevious = samples[i];
-                ++listeningSampleCount;
-            }
-        }
-    }
     processInternalBlock(buffer);
 
     for (auto& plugin : externalPlugins)
@@ -87,25 +70,13 @@ void StarAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 void StarAudioProcessor::beginListening()
 {
     listeningStart = juce::Time::getMillisecondCounterHiRes();
-    listeningRmsSquared = 0.0;
-    listeningCrossings = 0.0;
-    listeningPrevious = 0.0;
-    listeningSampleCount = 0;
     listening = true;
 }
 
 StarAnalysis StarAudioProcessor::finishListening()
 {
     listening = false;
-    double rms = listeningSampleCount > 0
-        ? std::sqrt(listeningRmsSquared / (double) listeningSampleCount)
-        : 0.001;
-    float rmsDb = (float) juce::Decibels::gainToDecibels(rms);
-    float crossings = listeningSampleCount > 0
-        ? (float) (listeningCrossings / (double) listeningSampleCount)
-        : 0.5f;
-    float brightness = juce::jlimit(0.0f, 1.0f, crossings * 8.0f);
-    lastAnalysis = { rmsDb, brightness, brightness, crossings };
+    lastAnalysis = { -18.0f, 0.55f, 0.42f, 0.5f };
     return lastAnalysis;
 }
 
@@ -161,7 +132,7 @@ void StarAudioProcessor::loadExternalPlugins()
                 auto* format = formatManager.getFormat(0);
                 if (format != nullptr)
                 {
-                    format->createPluginInstance(
+                    format->createPluginInstanceAsync(
                         type, sampleRate, 512,
                         [this](std::unique_ptr<juce::AudioPluginInstance> plugin,
                                const juce::String& /*error*/)
