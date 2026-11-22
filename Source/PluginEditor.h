@@ -14,14 +14,25 @@ public:
 private:
     void timerCallback() override;
     void rebuildRows();
+    void showListeningOverlay(bool);
     StarAudioProcessor& processor;
     juce::int64 listenStartMs = 0;
 
-    juce::TextButton scanButton { "Buscar mis plugins" };
-    juce::TextButton listenButton { "Escuchar mi voz (8 s)" };
+    juce::TextButton scanButton { "Buscar plugins" };
+    juce::TextButton listenButton { "Escuchar mi voz" };
+    juce::TextButton presetLeft { "<" };
+    juce::TextButton presetRight { ">" };
+    juce::Label presetTitle;
+    juce::Label titleLabel;
+    juce::Label modelLabel;
     juce::Label statusLabel;
     juce::TextEditor chatInput;
-    juce::TextButton chatButton { "Aplicar" };
+    juce::TextButton chatButton { "Aplicar IA" };
+    juce::Component listeningOverlay;
+    juce::Label listeningTitle;
+    juce::Label listeningText;
+    juce::Label listeningProgress;
+    double listeningProgressValue = 0.0;
     juce::OwnedArray<juce::Component> rows;
     juce::Component rowsContainer;
     juce::Viewport viewport;
