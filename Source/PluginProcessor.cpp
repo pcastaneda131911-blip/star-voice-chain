@@ -69,7 +69,6 @@ void StarAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
 void StarAudioProcessor::beginListening()
 {
-    listeningStart = juce::Time::getMillisecondCounterHiRes();
     listening = true;
 }
 

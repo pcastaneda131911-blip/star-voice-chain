@@ -57,7 +57,6 @@ private:
     std::atomic<bool> scanning { false };
     std::atomic<bool> listening { false };
     juce::String scanStatus { "No escaneado" };
-    juce::Time listeningStart;
     double sampleRate = 44100.0;
     StarAnalysis lastAnalysis;
 
