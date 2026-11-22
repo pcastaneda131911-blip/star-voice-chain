@@ -138,7 +138,6 @@ StarEditor::StarEditor(StarAudioProcessor& p)
     listeningOverlay.setVisible(false);
     listeningOverlay.setAlwaysOnTop(true);
     listeningOverlay.setInterceptsMouseClicks(true, true);
-    listeningOverlay.setColour(juce::Component::backgroundColourId, juce::Colour::fromARGB(220, 18, 20, 25));
     listeningOverlay.addAndMakeVisible(listeningTitle);
     listeningOverlay.addAndMakeVisible(listeningText);
     listeningOverlay.addAndMakeVisible(listeningProgress);
